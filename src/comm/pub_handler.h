@@ -64,7 +64,7 @@ class LidarPubHandler {
     {0, 0, 0},
     {
       {1, 0, 0},
-      {0, 1, 1},
+      {0, 1, 0}, /* Note: There was a 1 @ (2,3). Why? This should be (3x3) Identity*/
       {0, 0, 1}
     }
   };

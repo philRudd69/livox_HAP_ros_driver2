@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
   DRIVER_INFO(livox_node, "Livox Ros Driver2 Version: %s", LIVOX_ROS_DRIVER2_VERSION_STRING);
 
   /** Init default system parameter */
-  int xfer_format = kPointCloud2Msg;
+  int xfer_format = kPointCloud2XyzrtltMsg;
   int multi_topic = 0;
   int data_src = kSourceRawLidar;
   double publish_freq  = 10.0; /* Hz */
@@ -121,7 +121,7 @@ DriverNode::DriverNode(const rclcpp::NodeOptions & node_options)
   DRIVER_INFO(*this, "Livox Ros Driver2 Version: %s", LIVOX_ROS_DRIVER2_VERSION_STRING);
 
   /** Init default system parameter */
-  int xfer_format = kPointCloud2Msg;
+  int xfer_format = kPointCloud2XyzrtltMsg;
   int multi_topic = 0;
   int data_src = kSourceRawLidar;
   double publish_freq = 10.0; /* Hz */

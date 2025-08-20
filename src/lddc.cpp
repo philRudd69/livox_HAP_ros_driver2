@@ -166,12 +166,19 @@ void Lddc::PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar) {
   }
 
   while (!lds_->IsRequestExit() && !QueueIsEmpty(p_queue)) {
-    if (kPointCloud2Msg == transfer_format_) {
-      PublishPointcloud2(p_queue, index);
+    if (kPointCloud2XyzrtltMsg == transfer_format_) {
+      PublishPointcloud2Xyzrtlt(p_queue, index);
     } else if (kLivoxCustomMsg == transfer_format_) {
       PublishCustomPointcloud(p_queue, index);
     } else if (kPclPxyziMsg == transfer_format_) {
       PublishPclMsg(p_queue, index);
+    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->config.coordinate==1){
+      PublishPointCloud2Xyzttprrtl(p_queue, onetime_publish_packets, handle);
+    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->config.coordinate==0){
+      RCLCPP_WARN_THROTTLE(cur_node_->get_logger(), *cur_node_->get_clock(), 1000,
+                           "xfer_format = Livox Pointcloud(XYZTTPRRTL) (=4) but coordinate = cartesian (=0)." \
+                           "This is not possible. Switching to xfer_format = Livox Pointcloud(XYZRTL) (=0)");
+      PublishPointcloud2Xyzrtlt(p_queue, onetime_publish_packets, handle);
     }
   }
 }
@@ -198,7 +205,8 @@ void Lddc::PrepareExit(void) {
   }
 }
 
-void Lddc::PublishPointcloud2(LidarDataQueue *queue, uint8_t index) {
+/* for ROS standard PointCloud2 wiht Livox format in cartesian coordinates */
+void Lddc::PublishPointcloud2Xyzrtlt(LidarDataQueue *queue, uint8_t index) {
   while(!QueueIsEmpty(queue)) {
     StoragePacket pkg;
     QueuePop(queue, &pkg);
@@ -209,11 +217,12 @@ void Lddc::PublishPointcloud2(LidarDataQueue *queue, uint8_t index) {
 
     PointCloud2 cloud;
     uint64_t timestamp = 0;
-    InitPointcloud2Msg(pkg, cloud, timestamp);
-    PublishPointcloud2Data(index, timestamp, cloud);
+    InitPointcloud2XyzrtltMsg(pkg, cloud, timestamp);
+    PublishPointcloud2XyzrtltData(index, timestamp, cloud);
   }
 }
 
+/* for custom Livox PointCloud wiht Livox format in cartesian coordinates */
 void Lddc::PublishCustomPointcloud(LidarDataQueue *queue, uint8_t index) {
   while(!QueueIsEmpty(queue)) {
     StoragePacket pkg;
@@ -259,7 +268,24 @@ void Lddc::PublishPclMsg(LidarDataQueue *queue, uint8_t index) {
   return;
 }
 
-void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
+/* for ROS standard PointCloud2 wiht Livox format in cartesian coordinates and spherical coordinates */
+void Lddc::PublishPointCloud2Xyzttprrtl(LidarDataQueue *queue, uint8_t index) {
+  while(!QueueIsEmpty(queue)) {
+    StoragePacket pkg;
+    QueuePop(queue, &pkg);
+    if (pkg.points.empty()) {
+      printf("Publish point cloud2 failed, the pkg points is empty.\n");
+      continue;
+    }
+
+    PointCloud2 cloud;
+    uint64_t timestamp = 0;
+    InitPointCloud2XyzttprrtlMsg(pkg, cloud, timestamp);
+    PublishPointCloud2XyzttprrtlData(index, timestamp, cloud);
+  }
+}
+
+void Lddc::InitPointcloud2XyzrtltMsgHeader(PointCloud2& cloud) {
   cloud.header.frame_id.assign(frame_id_);
   cloud.height = 1;
   cloud.width = 0;
@@ -295,8 +321,57 @@ void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
   cloud.point_step = sizeof(LivoxPointXyzrtlt);
 }
 
-void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint64_t& timestamp) {
-  InitPointcloud2MsgHeader(cloud);
+void Lddc::InitPointcloud2MsgHeaderXyzttprrtl(PointCloud2& cloud) {
+  /* the new point type that contains cartesian and spherical coordinates */ 
+  cloud.header.frame_id.assign(frame_id_);
+  cloud.height = 1;
+  cloud.width = 0;
+  cloud.fields.resize(10);
+  cloud.fields[0].offset = 0;
+  cloud.fields[0].name = "x";
+  cloud.fields[0].count = 1;
+  cloud.fields[0].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  cloud.fields[1].offset = 4;
+  cloud.fields[1].name = "y";
+  cloud.fields[1].count = 1;
+  cloud.fields[1].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  cloud.fields[2].offset = 8;
+  cloud.fields[2].name = "z";
+  cloud.fields[2].count = 1;
+  cloud.fields[2].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  cloud.fields[3].offset = 12;
+  cloud.fields[3].name = "time_offset";
+  cloud.fields[3].count = 1;
+  cloud.fields[3].datatype = sensor_msgs::msg::PointField::UINT32;
+  cloud.fields[4].offset = 16;
+  cloud.fields[4].name = "theta";
+  cloud.fields[4].count = 1;
+  cloud.fields[4].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  cloud.fields[5].offset = 20;
+  cloud.fields[5].name = "phi";
+  cloud.fields[5].count = 1;
+  cloud.fields[5].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  cloud.fields[6].offset = 24;
+  cloud.fields[6].name = "r";
+  cloud.fields[6].count = 1;
+  cloud.fields[6].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  cloud.fields[7].offset = 28;
+  cloud.fields[7].name = "reflectivity";
+  cloud.fields[7].count = 1;
+  cloud.fields[7].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  cloud.fields[8].offset = 32;
+  cloud.fields[8].name = "tag";
+  cloud.fields[8].count = 1;
+  cloud.fields[8].datatype = sensor_msgs::msg::PointField::UINT8;
+  cloud.fields[9].offset = 33;
+  cloud.fields[9].name = "line";
+  cloud.fields[9].count = 1;
+  cloud.fields[9].datatype = sensor_msgs::msg::PointField::UINT8;
+  cloud.point_step = sizeof(LivoxPointXyzttprrtl);
+}
+
+void Lddc::InitPointcloud2XyzrtltMsg(const StoragePacket& pkg, PointCloud2& cloud, uint64_t& timestamp) {
+  InitPointcloud2XyzrtltMsgHeader(cloud);
 
   cloud.point_step = sizeof(LivoxPointXyzrtlt);
 
@@ -332,7 +407,66 @@ void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint
   memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyzrtlt));
 }
 
-void Lddc::PublishPointcloud2Data(const uint8_t index, const uint64_t timestamp, const PointCloud2& cloud) {
+void Lddc::InitPointCloud2XyzttprrtlMsg(const StoragePacket& pkg, PointCloud2& cloud, uint64_t& timestamp) {
+  InitPointCloud2XyzttprrtlMsgHeader(cloud);
+
+  cloud.point_step = sizeof(LivoxPointXyzttprrtl);
+
+  cloud.width = pkg.points_num;
+  cloud.row_step = cloud.width * cloud.point_step;
+
+  cloud.is_bigendian = false;
+  cloud.is_dense     = true;
+
+  if (!pkg.points.empty()) {
+    timestamp = pkg.base_time;
+  }
+
+  #ifdef BUILDING_ROS1
+      cloud.header.stamp = ros::Time( timestamp / 1000000000.0);
+  #elif defined BUILDING_ROS2
+      cloud.header.stamp = rclcpp::Time(timestamp);
+  #endif
+
+  std::vector<LivoxPointXyzttprrtl> points;
+  for (size_t i = 0; i < pkg.points_num; ++i) {
+    LivoxPointXyzttprrtl point;
+    point.x = pkg.points[i].x;
+    point.y = pkg.points[i].y;
+    point.z = pkg.points[i].z;
+    point.time_offset = static_cast<uint32_t>(pkg.points[i].offset_time - pkg.base_time);
+    point.theta = pkg.points[i].; // TODO
+    point.phi = pkg.points[i].; // TODO
+    point.r = pkg.points[i].; // TODO
+    point.reflectivity = pkg.points[i].intensity;
+    point.tag = pkg.points[i].tag;
+    point.line = pkg.points[i].line;
+    points.push_back(std::move(point));
+  }
+  cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyzttprrtl));
+  memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyzttprrtl));
+}
+
+void Lddc::PublishPointcloud2XyzrtltData(const uint8_t index, const uint64_t timestamp, const PointCloud2& cloud) {
+#ifdef BUILDING_ROS1
+  PublisherPtr publisher_ptr = Lddc::GetCurrentPublisher(index);
+#elif defined BUILDING_ROS2
+  Publisher<PointCloud2>::SharedPtr publisher_ptr =
+    std::dynamic_pointer_cast<Publisher<PointCloud2>>(GetCurrentPublisher(index));
+#endif
+
+  if (kOutputToRos == output_type_) {
+    publisher_ptr->publish(cloud);
+  } else {
+#ifdef BUILDING_ROS1
+    if (bag_ && enable_lidar_bag_) {
+      bag_->write(publisher_ptr->getTopic(), ros::Time(timestamp / 1000000000.0), cloud);
+    }
+#endif
+  }
+}
+
+void Lddc::PublishPointCloud2XyzttprrtlData(const uint8_t index, const uint64_t timestamp, const PointCloud2& cloud) {
 #ifdef BUILDING_ROS1
   PublisherPtr publisher_ptr = Lddc::GetCurrentPublisher(index);
 #elif defined BUILDING_ROS2
@@ -526,7 +660,7 @@ void Lddc::PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index
 #ifdef BUILDING_ROS2
 std::shared_ptr<rclcpp::PublisherBase> Lddc::CreatePublisher(uint8_t msg_type,
     std::string &topic_name, uint32_t queue_size) {
-    if (kPointCloud2Msg == msg_type) {
+    if (kPointCloud2XyzrtltMsg == msg_type || kPointCloud2XyzttprrtlMsg == msg_type) {
       DRIVER_INFO(*cur_node_,
           "%s publish use PointCloud2 format", topic_name.c_str());
       return cur_node_->create_publisher<PointCloud2>(topic_name, queue_size);
@@ -581,7 +715,7 @@ PublisherPtr Lddc::GetCurrentPublisher(uint8_t index) {
     }
 
     *pub = new ros::Publisher;
-    if (kPointCloud2Msg == transfer_format_) {
+    if (kPointCloud2XyzrtltMsg == transfer_format_ || kPointCloud2XyzttprrtlMsg == transfer_format_) {
       **pub =
           cur_node_->GetNode().advertise<sensor_msgs::PointCloud2>(name_str, queue_size);
       DRIVER_INFO(*cur_node_,

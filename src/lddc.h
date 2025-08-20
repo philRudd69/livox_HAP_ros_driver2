@@ -40,10 +40,11 @@ typedef enum {
 
 /** The message type of transfer */
 typedef enum {
-  kPointCloud2Msg = 0,
+  kPointCloud2XyzrtltMsg = 0,
   kLivoxCustomMsg = 1,
   kPclPxyziMsg = 2,
   kLivoxImuMsg = 3,
+  kPointCloud2XyzttprrtlMsg = 4,
 } TransferType;
 
 /** Type-Definitions based on ROS versions */
@@ -100,9 +101,10 @@ class Lddc final {
   void PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar);
   void PollingLidarImuData(uint8_t index, LidarDevice *lidar);
 
-  void PublishPointcloud2(LidarDataQueue *queue, uint8_t index);
+  void PublishPointcloud2Xyzrtlt(LidarDataQueue *queue, uint8_t index);
   void PublishCustomPointcloud(LidarDataQueue *queue, uint8_t index);
   void PublishPclMsg(LidarDataQueue *queue, uint8_t index);
+  void PublishPointCloud2Xyzttprrtl(LidarDataQueue *queue, uint8_t index);
 
   void PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index);
 

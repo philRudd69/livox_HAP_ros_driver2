@@ -129,7 +129,7 @@ void PubHandler::OnLivoxLidarPointCloudCallback(uint32_t handle, const uint8_t d
   RawPacket packet = {};
   packet.handle = handle;
   packet.lidar_type = LidarProtoType::kLivoxLidarType;
-  packet.extrinsic_enable = false; 
+  packet.extrinsic_enable = false;  /* Note: extrinsic_enable set by default to false and is not changed anywhere in the code.*/
   if (dev_type == LivoxLidarDeviceType::kLivoxLidarTypeIndustrialHAP) {
     packet.line_num = kLineNumberHAP;
   } else if (dev_type == LivoxLidarDeviceType::kLivoxLidarTypeMid360) {
@@ -413,7 +413,7 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
     point.intensity = raw[i].reflectivity;
     point.line = i % pkt.line_num;
     point.tag = raw[i].tag;
-    point.offset_time = pkt.time_stamp + i * pkt.point_interval;
+    point.offset_time = pkt.time_stamp + i * pkt.point_interval;  // Faulty: This is not an offset, but the absolute timestamp
     std::lock_guard<std::mutex> lock(mutex_);
     points_clouds_.push_back(point);
   }
@@ -421,30 +421,76 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
 
 void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
   LivoxLidarSpherPoint* raw = (LivoxLidarSpherPoint*)pkt.raw_data.data();
-  PointXyzlt point = {};
+  LivoxPointXyzttprrtl point = {};
   for (uint32_t i = 0; i < pkt.point_num; i++) {
-    double radius = raw[i].depth / 1000.0;
-    double theta = raw[i].theta / 100.0 / 180 * PI;
-    double phi = raw[i].phi / 100.0 / 180 * PI;
-    double src_x = radius * sin(theta) * cos(phi);
-    double src_y = radius * sin(theta) * sin(phi);
-    double src_z = radius * cos(theta);
-    if (pkt.extrinsic_enable) {
-      point.x = src_x;
-      point.y = src_y;
-      point.z = src_z;
-    } else {
-      point.x = src_x * extrinsic_.rotation[0][0] +
-                src_y * extrinsic_.rotation[0][1] +
-                src_z * extrinsic_.rotation[0][2] + (extrinsic_.trans[0] / 1000.0);
-      point.y = src_x * extrinsic_.rotation[1][0] +
-                src_y * extrinsic_.rotation[1][1] +
-                src_z * extrinsic_.rotation[1][2] + (extrinsic_.trans[1] / 1000.0);
-      point.z = src_x * extrinsic_.rotation[2][0] +
-                src_y * extrinsic_.rotation[2][1] +
-                src_z * extrinsic_.rotation[2][2] + (extrinsic_.trans[2] / 1000.0);
+    if ((raw[i].depth / 1000.0) > 0.0){
+      double radius = raw[i].depth / 1000.0;
+      double theta = raw[i].theta / 100.0 / 180 * PI;
+      double phi = raw[i].phi / 100.0 / 180 * PI;
+      double src_x = radius * sin(theta) * cos(phi);
+      double src_y = radius * sin(theta) * sin(phi);
+      double src_z = radius * cos(theta);
+      // Note: The following seems odd: 
+      //       Why are we ignoring the extrinsics if extrinsic_enable==true?
+      if (pkt.extrinsic_enable) {
+        // Note: This code is never executed because
+        //       extrinsic_enable is always set to false!
+        point.x = src_x;
+        point.y = src_y;
+        point.z = src_z;
+        point.theta = phi;            /* msg definition swaps theta and phi*/
+        point.phi = PI / 2.0 - theta; /* also the elevation is originally measured from the upright z-axis.*/
+        point.r = radius;
+      } else {
+        point.x = src_x * extrinsic_.rotation[0][0] +
+                  src_y * extrinsic_.rotation[0][1] +
+                  src_z * extrinsic_.rotation[0][2] + (extrinsic_.trans[0] / 1000.0);
+        point.y = src_x * extrinsic_.rotation[1][0] +
+                  src_y * extrinsic_.rotation[1][1] +
+                  src_z * extrinsic_.rotation[1][2] + (extrinsic_.trans[1] / 1000.0);
+        point.z = src_x * extrinsic_.rotation[2][0] +
+                  src_y * extrinsic_.rotation[2][1] +
+                  src_z * extrinsic_.rotation[2][2] + (extrinsic_.trans[2] / 1000.0);
+        // transform back to spherical
+        point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
+        point.phi = arcsin(point.z/point.r);
+        double r_xy = sqrt(point.y*point.y + point.x*point.x);
+        point.theta = arcsin(point.y / r_xy);
+      }
+    } else{
+      double radius = 1.0;
+      double theta = raw[i].theta / 100.0 / 180 * PI;
+      double phi = raw[i].phi / 100.0 / 180 * PI;
+      double src_x = radius * sin(theta) * cos(phi);
+      double src_y = radius * sin(theta) * sin(phi);
+      double src_z = radius * cos(theta);
+      // Note: The following seems odd: 
+      //       Why are we ignoring the extrinsics if extrinsic_enable==true?
+      if (pkt.extrinsic_enable) {
+        // Note: This code is never executed because
+        //       extrinsic_enable is always set to false!
+        point.x = src_x;
+        point.y = src_y;
+        point.z = src_z;
+        point.theta = phi;            /* msg definition swaps theta and phi*/
+        point.phi = PI / 2.0 - theta; /* also the elevation is originally measured from the upright z-axis.*/
+        point.r = radius;
+      } else {
+        point.x = src_x * extrinsic_.rotation[0][0] +
+                  src_y * extrinsic_.rotation[0][1] +
+                  src_z * extrinsic_.rotation[0][2] + (extrinsic_.trans[0] / 1000.0);
+        point.y = src_x * extrinsic_.rotation[1][0] +
+                  src_y * extrinsic_.rotation[1][1] +
+                  src_z * extrinsic_.rotation[1][2] + (extrinsic_.trans[1] / 1000.0);
+        point.z = src_x * extrinsic_.rotation[2][0] +
+                  src_y * extrinsic_.rotation[2][1] +
+                  src_z * extrinsic_.rotation[2][2] + (extrinsic_.trans[2] / 1000.0);
+        // transform back to spherical
+        point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
+        point.phi = arcsin(point.z/point.r);
+        double r_xy = sqrt(point.y*point.y + point.x*point.x);
+        point.theta = arcsin(point.y / r_xy);
     }
-
     point.intensity = raw[i].reflectivity;
     point.line = i % pkt.line_num;
     point.tag = raw[i].tag;

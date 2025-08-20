@@ -114,7 +114,10 @@ typedef enum {
   kSourceUndef,
 } LidarDataSourceType;
 
-typedef enum { kCoordinateCartesian = 0, kCoordinateSpherical } CoordinateType;
+typedef enum { 
+  kCoordinateCartesian = 0, 
+  kCoordinateSpherical // TODO set this to 1?
+} CoordinateType;
 
 typedef enum {
   kConfigDataType = 1 << 0,
@@ -156,6 +159,19 @@ typedef struct {
   uint8_t line;       /**< Laser line id     */
   double timestamp;   /**< Timestamp of point*/
 } LivoxPointXyzrtlt;
+
+typedef struct {
+  float x;            /**< X axis, Unit:m */
+  float y;            /**< Y axis, Unit:m */
+  float z;            /**< Z axis, Unit:m */
+  uint32_t time_offset; /** point time offset from header time stamp, Unit:ns */
+  float theta;        /**< Azimuth, horizontal angle in xy-plane, measured from positive x-axis counter-clockwise, Unit:rad */
+  float phi;          /**< Elevation, vertical angle in yz-plane, measured from xy-plane upwards as positive, Unit:rad */
+  float r;            /**< Range, radial distance, Unit:m */
+  float reflectivity; /**< Reflectivity   */
+  uint8_t tag;        /**< Livox point tag   */
+  uint8_t line;       /**< Laser line id     */
+} LivoxPointXyzttprrtl;
 
 typedef struct {
   float x;
