@@ -48,7 +48,7 @@ class LidarPubHandler {
 
   void PointCloudProcess(RawPacket& pkt);
   void SetLidarsExtParam(LidarExtParameter param);
-  void GetLidarPointClouds(std::vector<PointXyzlt>& points_clouds);
+  void GetLidarPointClouds(std::vector<PointInternalStorage>& points_clouds);
 
   uint64_t GetRecentTimeStamp();
   uint32_t GetLidarPointCloudsSize();
@@ -59,12 +59,12 @@ class LidarPubHandler {
   void ProcessCartesianHighPoint(RawPacket & pkt);
   void ProcessCartesianLowPoint(RawPacket & pkt);
   void ProcessSphericalPoint(RawPacket & pkt);
-  std::vector<PointXyzlt> points_clouds_;
+  std::vector<PointInternalStorage> points_clouds_;
   ExtParameterDetailed extrinsic_ = {
     {0, 0, 0},
     {
       {1, 0, 0},
-      {0, 1, 0}, /* Note: There was a 1 @ (2,3). Why? This should be (3x3) Identity*/
+      {0, 1, 0}, /* Note: There was a 1 @ (2,3). Why? This should be (3x3) Identity */
       {0, 0, 1}
     }
   };

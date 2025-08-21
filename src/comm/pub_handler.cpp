@@ -282,10 +282,10 @@ uint64_t LidarPubHandler::GetLidarBaseTime() {
   if (points_clouds_.empty()) {
     return 0;
   }
-  return points_clouds_.at(0).offset_time;
+  return points_clouds_.at(0).absolute_time;
 }
 
-void LidarPubHandler::GetLidarPointClouds(std::vector<PointXyzlt>& points_clouds) {
+void LidarPubHandler::GetLidarPointClouds(std::vector<PointInternalStorage>& points_clouds) {
   std::lock_guard<std::mutex> lock(mutex_);
   points_clouds.swap(points_clouds_);
 }
@@ -294,7 +294,7 @@ uint64_t LidarPubHandler::GetRecentTimeStamp() {
   if (points_clouds_.empty()) {
     return 0;
   }
-  return points_clouds_.back().offset_time;
+  return points_clouds_.back().absolute_time;
 }
 
 uint32_t LidarPubHandler::GetLidarPointCloudsSize() {
@@ -365,7 +365,7 @@ void LidarPubHandler::SetLidarsExtParam(LidarExtParameter lidar_param) {
 
 void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
   LivoxLidarCartesianHighRawPoint* raw = (LivoxLidarCartesianHighRawPoint*)pkt.raw_data.data();
-  PointXyzlt point = {};
+  PointInternalStorage point = {};
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 1000.0;
@@ -382,10 +382,10 @@ void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
                 raw[i].y * extrinsic_.rotation[2][1] +
                 raw[i].z * extrinsic_.rotation[2][2] + extrinsic_.trans[2]) / 1000.0;
     }
-    point.intensity = raw[i].reflectivity;
+    point.reflectivity = raw[i].reflectivity;
     point.line = i % pkt.line_num;
     point.tag = raw[i].tag;
-    point.offset_time = pkt.time_stamp + i * pkt.point_interval;
+    point.absolute_time = pkt.time_stamp + i * pkt.point_interval;
     std::lock_guard<std::mutex> lock(mutex_);
     points_clouds_.push_back(point);
   }
@@ -393,7 +393,7 @@ void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
 
 void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
   LivoxLidarCartesianLowRawPoint* raw = (LivoxLidarCartesianLowRawPoint*)pkt.raw_data.data();
-  PointXyzlt point = {};
+  PointInternalStorage point = {};
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 100.0;
@@ -410,10 +410,10 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
                 raw[i].y * extrinsic_.rotation[2][1] +
                 raw[i].z * extrinsic_.rotation[2][2] + extrinsic_.trans[2]) / 100.0;
     }
-    point.intensity = raw[i].reflectivity;
+    point.reflectivity = raw[i].reflectivity;
     point.line = i % pkt.line_num;
     point.tag = raw[i].tag;
-    point.offset_time = pkt.time_stamp + i * pkt.point_interval;  // Faulty: This is not an offset, but the absolute timestamp
+    point.absolute_time = pkt.time_stamp + i * pkt.point_interval;
     std::lock_guard<std::mutex> lock(mutex_);
     points_clouds_.push_back(point);
   }
@@ -421,7 +421,7 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
 
 void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
   LivoxLidarSpherPoint* raw = (LivoxLidarSpherPoint*)pkt.raw_data.data();
-  LivoxPointXyzttprrtl point = {};
+  PointInternalStorage point = {};
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if ((raw[i].depth / 1000.0) > 0.0){
       double radius = raw[i].depth / 1000.0;
@@ -453,12 +453,12 @@ void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
                   src_z * extrinsic_.rotation[2][2] + (extrinsic_.trans[2] / 1000.0);
         // transform back to spherical
         point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
-        point.phi = arcsin(point.z/point.r);
+        point.phi = asin(point.z/point.r);
         double r_xy = sqrt(point.y*point.y + point.x*point.x);
-        point.theta = arcsin(point.y / r_xy);
+        point.theta = asin(point.y / r_xy);
       }
-    } else{
-      double radius = 1.0;
+    } else{  // radius would be 0, this would compromise the calculation of meaningful spherical coordinates in the "transform back to spherical" part
+      double radius = 1.0;  // artificial value
       double theta = raw[i].theta / 100.0 / 180 * PI;
       double phi = raw[i].phi / 100.0 / 180 * PI;
       double src_x = radius * sin(theta) * cos(phi);
@@ -469,12 +469,12 @@ void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
       if (pkt.extrinsic_enable) {
         // Note: This code is never executed because
         //       extrinsic_enable is always set to false!
-        point.x = src_x;
-        point.y = src_y;
-        point.z = src_z;
+        point.x = 0.0;
+        point.y = 0.0;
+        point.z = 0.0;
         point.theta = phi;            /* msg definition swaps theta and phi*/
         point.phi = PI / 2.0 - theta; /* also the elevation is originally measured from the upright z-axis.*/
-        point.r = radius;
+        point.r = 0.0;
       } else {
         point.x = src_x * extrinsic_.rotation[0][0] +
                   src_y * extrinsic_.rotation[0][1] +
@@ -487,14 +487,17 @@ void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
                   src_z * extrinsic_.rotation[2][2] + (extrinsic_.trans[2] / 1000.0);
         // transform back to spherical
         point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
-        point.phi = arcsin(point.z/point.r);
+        point.phi = asin(point.z/point.r);
         double r_xy = sqrt(point.y*point.y + point.x*point.x);
-        point.theta = arcsin(point.y / r_xy);
+        point.theta = asin(point.y / r_xy);
+        point.x = 0.0;
+        point.y = 0.0;
+        point.z = 0.0;
     }
-    point.intensity = raw[i].reflectivity;
+    point.reflectivity = raw[i].reflectivity;
     point.line = i % pkt.line_num;
     point.tag = raw[i].tag;
-    point.offset_time = pkt.time_stamp + i * pkt.point_interval;
+    point.absolute_time = pkt.time_stamp + i * pkt.point_interval;
     std::lock_guard<std::mutex> lock(mutex_);
     points_clouds_.push_back(point);
   }

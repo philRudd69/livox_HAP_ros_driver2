@@ -173,12 +173,12 @@ void Lddc::PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar) {
     } else if (kPclPxyziMsg == transfer_format_) {
       PublishPclMsg(p_queue, index);
     } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->config.coordinate==1){
-      PublishPointCloud2Xyzttprrtl(p_queue, onetime_publish_packets, handle);
+      PublishPointCloud2Xyzttprrtl(p_queue, index);
     } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->config.coordinate==0){
       RCLCPP_WARN_THROTTLE(cur_node_->get_logger(), *cur_node_->get_clock(), 1000,
                            "xfer_format = Livox Pointcloud(XYZTTPRRTL) (=4) but coordinate = cartesian (=0)." \
                            "This is not possible. Switching to xfer_format = Livox Pointcloud(XYZRTL) (=0)");
-      PublishPointcloud2Xyzrtlt(p_queue, onetime_publish_packets, handle);
+      PublishPointcloud2Xyzrtlt(p_queue, index);
     }
   }
 }
@@ -434,11 +434,11 @@ void Lddc::InitPointCloud2XyzttprrtlMsg(const StoragePacket& pkg, PointCloud2& c
     point.x = pkg.points[i].x;
     point.y = pkg.points[i].y;
     point.z = pkg.points[i].z;
-    point.time_offset = static_cast<uint32_t>(pkg.points[i].offset_time - pkg.base_time);
-    point.theta = pkg.points[i].; // TODO
-    point.phi = pkg.points[i].; // TODO
-    point.r = pkg.points[i].; // TODO
-    point.reflectivity = pkg.points[i].intensity;
+    point.time_offset = static_cast<uint32_t>(pkg.points[i].absolute_time - pkg.base_time);
+    point.theta = pkg.points[i].theta;
+    point.phi = pkg.points[i].phi;
+    point.r = pkg.points[i].r;
+    point.reflectivity = pkg.points[i].reflectivity;
     point.tag = pkg.points[i].tag;
     point.line = pkg.points[i].line;
     points.push_back(std::move(point));

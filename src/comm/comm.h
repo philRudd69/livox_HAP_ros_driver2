@@ -160,6 +160,7 @@ typedef struct {
   double timestamp;   /**< Timestamp of point*/
 } LivoxPointXyzrtlt;
 
+/* Point type for xfer_format==4 with spheriacl and cartesian coordinates */
 typedef struct {
   float x;            /**< X axis, Unit:m */
   float y;            /**< Y axis, Unit:m */
@@ -183,6 +184,20 @@ typedef struct {
   uint64_t offset_time;
 } PointXyzlt;
 
+/* point type with all information for storing internally in LidarPubHandler::points_clouds_ */
+typedef struct {
+  float x;
+  float y;
+  float z;
+  float theta;        /**< Azimuth, horizontal angle in xy-plane, measured from positive x-axis counter-clockwise, Unit:rad */
+  float phi;          /**< Elevation, vertical angle in yz-plane, measured from xy-plane upwards as positive, Unit:rad */
+  float r;
+  float reflectivity;
+  uint8_t tag;
+  uint8_t line;
+  uint64_t absolute_time;
+} PointInternalStorage;
+
 typedef struct {
   uint32_t handle;
   uint8_t lidar_type; ////refer to LivoxLidarType
@@ -191,7 +206,7 @@ typedef struct {
 } PointPacket;
 
 typedef struct {
-  uint64_t base_time[kMaxSourceLidar] {};
+  uint64_t base_time[kMaxSourceLidar] {};  // zero value initialization
   uint8_t lidar_num {};
   PointPacket lidar_point[kMaxSourceLidar] {};
 } PointFrame;
@@ -203,7 +218,7 @@ typedef struct {
   uint32_t handle;
   uint64_t base_time;
   uint32_t points_num;
-  std::vector<PointXyzlt> points;
+  std::vector<PointXyzlt> points;  // TODO: change to PointInternalStorage?
 } StoragePacket;
 
 typedef struct {

@@ -122,6 +122,9 @@ void Lds::StorageImuData(ImuData* imu_data) {
   }
 }
 
+/***
+ * This method is not used
+ */
 void Lds::StorageLvxPointData(PointFrame* frame) {
   if (frame == nullptr) {
     return;
