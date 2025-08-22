@@ -164,20 +164,20 @@ void PubHandler::PublishPointCloud() {
 void PubHandler::CheckTimer(uint32_t id) {
 
   if (PubHandler::is_timestamp_sync_.load()) { // Enable time synchronization
-    auto& process_handler = lidar_process_handlers_[id];
-    uint64_t recent_time_ms = process_handler->GetRecentTimeStamp() / kRatioOfMsToNs;
+    auto& process_handler = lidar_process_handlers_[id];  // get the LidarPubHandler that matches the packet taken from the top of the queue in rawDataProcess()
+    uint64_t recent_time_ms = process_handler->GetRecentTimeStamp() / kRatioOfMsToNs; // get the timestamp of the most recent point in the points_clouds_ of LidarPubHandler
     if ((recent_time_ms % publish_interval_ms_ != 0) || recent_time_ms == 0) {
       return;
     }
 
-    uint64_t diff = process_handler->GetRecentTimeStamp() - process_handler->GetLidarBaseTime();
+    uint64_t diff = process_handler->GetRecentTimeStamp() - process_handler->GetLidarBaseTime(); // if too few points are in the points_clouds_ internal storage
     if (diff < publish_interval_tolerance_) {
       return;
     }
 
     frame_.base_time[frame_.lidar_num] = process_handler->GetLidarBaseTime();
     points_[id].clear();
-    process_handler->GetLidarPointClouds(points_[id]);
+    process_handler->GetLidarPointClouds(points_[id]);  // copy the points_clouds_ content from LidarPubHandler
     if (points_[id].empty()) {
       return;
     }
@@ -185,7 +185,7 @@ void PubHandler::CheckTimer(uint32_t id) {
     lidar_point.lidar_type = LidarProtoType::kLivoxLidarType;  // TODO:
     lidar_point.handle = id;
     lidar_point.points_num = points_[id].size();
-    lidar_point.points = points_[id].data();
+    lidar_point.points = points_[id].data();  // why does the points_ storage exist at all, if the data is copied to the frame_ right away?
     frame_.lidar_num++;
     
     if (frame_.lidar_num != 0) {
@@ -285,7 +285,7 @@ uint64_t LidarPubHandler::GetLidarBaseTime() {
   return points_clouds_.at(0).absolute_time;
 }
 
-void LidarPubHandler::GetLidarPointClouds(std::vector<PointInternalStorage>& points_clouds) {
+void LidarPubHandler::GetLidarPointClouds(std::vector<StoragePoint>& points_clouds) {
   std::lock_guard<std::mutex> lock(mutex_);
   points_clouds.swap(points_clouds_);
 }
@@ -365,7 +365,7 @@ void LidarPubHandler::SetLidarsExtParam(LidarExtParameter lidar_param) {
 
 void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
   LivoxLidarCartesianHighRawPoint* raw = (LivoxLidarCartesianHighRawPoint*)pkt.raw_data.data();
-  PointInternalStorage point = {};
+  StoragePoint point = {};
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 1000.0;
@@ -393,7 +393,7 @@ void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
 
 void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
   LivoxLidarCartesianLowRawPoint* raw = (LivoxLidarCartesianLowRawPoint*)pkt.raw_data.data();
-  PointInternalStorage point = {};
+  StoragePoint point = {};
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 100.0;
@@ -421,7 +421,7 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
 
 void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
   LivoxLidarSpherPoint* raw = (LivoxLidarSpherPoint*)pkt.raw_data.data();
-  PointInternalStorage point = {};
+  StoragePoint point = {};
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if ((raw[i].depth / 1000.0) > 0.0){
       double radius = raw[i].depth / 1000.0;

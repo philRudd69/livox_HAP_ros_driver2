@@ -121,7 +121,8 @@ class Lddc final {
   void PublishPclData(const uint8_t index, const uint64_t timestamp, const PointCloud& cloud);
 
   void InitImuMsg(const ImuData& imu_data, ImuMsg& imu_msg, uint64_t& timestamp);
-
+  
+  /* TODO: Delete, bc the following two function overloads are not defined anywhere */
   void FillPointsToPclMsg(PointCloud& pcl_msg, LivoxPointXyzrtlt* src_point, uint32_t num);
   void FillPointsToCustomMsg(CustomMsg& livox_msg, LivoxPointXyzrtlt* src_point, uint32_t num,
       uint32_t offset_time, uint32_t point_interval, uint32_t echo_num);

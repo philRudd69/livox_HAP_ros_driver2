@@ -174,16 +174,6 @@ typedef struct {
   uint8_t line;       /**< Laser line id     */
 } LivoxPointXyzttprrtl;
 
-typedef struct {
-  float x;
-  float y;
-  float z;
-  float intensity;
-  uint8_t tag;
-  uint8_t line;
-  uint64_t offset_time;
-} PointXyzlt;
-
 /* point type with all information for storing internally in LidarPubHandler::points_clouds_ */
 typedef struct {
   float x;
@@ -196,13 +186,13 @@ typedef struct {
   uint8_t tag;
   uint8_t line;
   uint64_t absolute_time;
-} PointInternalStorage;
+} StoragePoint;
 
 typedef struct {
   uint32_t handle;
   uint8_t lidar_type; ////refer to LivoxLidarType
   uint32_t points_num;
-  PointXyzlt* points;
+  StoragePoint* points;  // TODO: change to StoragePoint?
 } PointPacket;
 
 typedef struct {
@@ -218,7 +208,7 @@ typedef struct {
   uint32_t handle;
   uint64_t base_time;
   uint32_t points_num;
-  std::vector<PointXyzlt> points;  // TODO: change to PointInternalStorage?
+  std::vector<StoragePoint> points;  // TODO: change to StoragePoint?
 } StoragePacket;
 
 typedef struct {

@@ -397,10 +397,10 @@ void Lddc::InitPointcloud2XyzrtltMsg(const StoragePacket& pkg, PointCloud2& clou
     point.x = pkg.points[i].x;
     point.y = pkg.points[i].y;
     point.z = pkg.points[i].z;
-    point.reflectivity = pkg.points[i].intensity;
+    point.reflectivity = pkg.points[i].reflectivity;
     point.tag = pkg.points[i].tag;
     point.line = pkg.points[i].line;
-    point.timestamp = static_cast<double>(pkg.points[i].offset_time);
+    point.timestamp = static_cast<double>(pkg.points[i].absolute_time);
     points.push_back(std::move(point));
   }
   cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyzrtlt));
@@ -517,16 +517,16 @@ void Lddc::InitCustomMsg(CustomMsg& livox_msg, const StoragePacket& pkg, uint8_t
 
 void Lddc::FillPointsToCustomMsg(CustomMsg& livox_msg, const StoragePacket& pkg) {
   uint32_t points_num = pkg.points_num;
-  const std::vector<PointXyzlt>& points = pkg.points;
+  const std::vector<StoragePoint>& points = pkg.points;
   for (uint32_t i = 0; i < points_num; ++i) {
     CustomPoint point;
     point.x = points[i].x;
     point.y = points[i].y;
     point.z = points[i].z;
-    point.reflectivity = points[i].intensity;
+    point.reflectivity = points[i].reflectivity;
     point.tag = points[i].tag;
     point.line = points[i].line;
-    point.offset_time = static_cast<uint32_t>(points[i].offset_time - pkg.base_time);
+    point.offset_time = static_cast<uint32_t>(points[i].absolute_time - pkg.base_time);
 
     livox_msg.points.push_back(std::move(point));
   }
@@ -575,13 +575,13 @@ void Lddc::FillPointsToPclMsg(const StoragePacket& pkg, PointCloud& pcl_msg) {
   }
 
   uint32_t points_num = pkg.points_num;
-  const std::vector<PointXyzlt>& points = pkg.points;
+  const std::vector<StoragePoint>& points = pkg.points;
   for (uint32_t i = 0; i < points_num; ++i) {
     pcl::PointXYZI point;
     point.x = points[i].x;
     point.y = points[i].y;
     point.z = points[i].z;
-    point.intensity = points[i].intensity;
+    point.intensity = points[i].reflectivity;
 
     pcl_msg.points.push_back(std::move(point));
   }

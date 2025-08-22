@@ -30,7 +30,7 @@
 
 namespace livox_ros {
 
-void LidarCommonCallback::OnLidarPointClounCb(PointFrame* frame, void* client_data) {
+void LidarCommonCallback::OnLidarPointCloudCb(PointFrame* frame, void* client_data) {
   if (frame == nullptr) {
     printf("LidarPointCloudCb frame is nullptr.\n");
     return;

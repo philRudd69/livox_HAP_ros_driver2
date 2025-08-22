@@ -48,7 +48,7 @@ class LidarPubHandler {
 
   void PointCloudProcess(RawPacket& pkt);
   void SetLidarsExtParam(LidarExtParameter param);
-  void GetLidarPointClouds(std::vector<PointInternalStorage>& points_clouds);
+  void GetLidarPointClouds(std::vector<StoragePoint>& points_clouds);
 
   uint64_t GetRecentTimeStamp();
   uint32_t GetLidarPointCloudsSize();
@@ -59,7 +59,7 @@ class LidarPubHandler {
   void ProcessCartesianHighPoint(RawPacket & pkt);
   void ProcessCartesianLowPoint(RawPacket & pkt);
   void ProcessSphericalPoint(RawPacket & pkt);
-  std::vector<PointInternalStorage> points_clouds_;
+  std::vector<StoragePoint> points_clouds_;
   ExtParameterDetailed extrinsic_ = {
     {0, 0, 0},
     {
@@ -125,7 +125,7 @@ class PubHandler {
   TimePoint last_pub_time_;
 
   std::map<uint32_t, std::unique_ptr<LidarPubHandler>> lidar_process_handlers_;
-  std::map<uint32_t, std::vector<PointXyzlt>> points_;
+  std::map<uint32_t, std::vector<StoragePoint>> points_;  // TODO: this should probably be altered to StoragePoint
   std::map<uint32_t, LidarExtParameter> lidar_extrinsics_;
   static std::atomic<bool> is_timestamp_sync_;
   uint16_t lidar_listen_id_ = 0;
