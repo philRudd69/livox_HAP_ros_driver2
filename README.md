@@ -4,8 +4,6 @@ Livox ROS Driver 2 is the 2nd-generation driver package used to connect LiDAR pr
 
 ***Note :*** This fork differs from the original Livox repository in that it publishes also spherical point coordinates in the pointcloud2 message.
 
-***Rationale :*** The pattern of the HAP TX LiDAR is non-repetitive, making it difficult to the user to count FN detections on a known target (with a known size at a known distance). If the pattern were static or repetitive, the user could count the FNs on a target. This number of FNs can be of high interest to the user if one wants to assess safty relevant behaviour of the sensor, like measuring the FN rate on a known target, e.g. to identify the sensor's maximum detection range according to DIN SAE SPEC 91471 [1]. For the non-repetitive pattern one therefore needs to know the exact scanning pattern for each frame. Option one would be to mathematically predict the pattern as in [2]. Option two is to make use of the fact that (1) the pointcloud also contains all INVALID points and (2) the sensor can transfer the points in spherical coordinates to the ROS2 driver. The INVALID points are ALL located at the point cloud origin. In cartesian coordinates these INVALID points would therefore be useless, but in spherical coordinates one can retrieve the scanning directions also for those INVALID points. That means one can retrieve the complete scanning pattern of a frame if one looks at the set of valid and INVALID points in spherical coordinates.
-
   **Note :**
 
   As a debugging tool, Livox ROS Driver is not recommended for mass production but limited to test scenarios. You should optimize the code based on the original source to meet your various needs.
@@ -261,9 +259,10 @@ The parameter attributes in the above json file are described in the following t
 | Parameter                  | Type    | Description                                                  | Default         |
 | :------------------------- | ------- | ------------------------------------------------------------ | --------------- |
 | ip             | String  | Ip of the LiDAR you want to config | 192.168.1.100 |
-| pcl_data_type             | Int | Choose the resolution of the point cloud data to send<br>1 -- Cartesian coordinate data (32 bits)<br>2 -- Cartesian coordinate data (16 bits) <br>3 --Spherical coordinate data| 1           |
+| pcl_data_type             | Int | Choose the resolution of the point cloud data to send<br>1 -- Cartesian coordinate data (32 bits)<br>2 -- Cartesian coordinate data (16 bits) <br>3 --Spherical coordinate data (Not available for HAP)| 1           |
 | pattern_mode                | Int     | Space scan pattern<br>0 -- non-repeating scanning pattern mode<br>1 -- repeating scanning pattern mode <br>2 -- repeating scanning pattern mode (low scanning rate) | 0               |
 | blind_spot_set (Only for HAP LiDAR)                 | Int     | Set blind spot<br>Range from 50 cm to 200 cm               | 50               |
+| dual_emit_en: 1,                 | Int     | Enable dual return               | ?             |
 | extrinsic_parameter |      | Set extrinsic parameter<br> The data types of "roll" "picth" "yaw" are float <br>  The data types of "x" "y" "z" are int<br>               |
 
 For more infomation about the HAP config, please refer to:
@@ -564,15 +563,7 @@ Please add '/usr/local/lib' to the env LD_LIBRARY_PATH.
   ```
 ## 7. How to get Spherical Coordinates in the ROS messages
 
-1. Configure the Sensor:
-
-    Set the type of coordinates being sent via UDP packets from the sensor to the ROS driver to spherical coordinates, by setting
-    ```json
-    "pcl_data_type" : 3
-    ```` 
-    in the .json config file, e.g. in HAP_config.json
-
-2. Configure the ROS driver:
+1. Configure the ROS driver:
 
     Set the ROS message type to the one that holds cartesian and spherical point clouds, i.e. PointXYZTTPRRTL, by setting
     ```python
@@ -580,7 +571,7 @@ Please add '/usr/local/lib' to the env LD_LIBRARY_PATH.
     ```
     in the launch file, e.g. in rviz_HAP_launch.py
 
-3. Run the launchfile.
+2. Run the launchfile.
 
 ## 8. References
 

@@ -366,12 +366,20 @@ void LidarPubHandler::SetLidarsExtParam(LidarExtParameter lidar_param) {
 void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
   LivoxLidarCartesianHighRawPoint* raw = (LivoxLidarCartesianHighRawPoint*)pkt.raw_data.data();
   StoragePoint point = {};
-  std::cout << "We are in ProcessCartesianHighPoint" << std::endl;
+  static bool first = true;
+  if (first){
+    std::cout << "Sensor provides CartesianHighPoint" << std::endl;
+    first = false;
+  }
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 1000.0;
       point.y = raw[i].y / 1000.0;
       point.z = raw[i].z / 1000.0;
+      point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
+      point.phi = asin(point.z/point.r);
+      double r_xy = sqrt(point.y*point.y + point.x*point.x);
+      point.theta = asin(point.y / r_xy);
     } else {
       point.x = (raw[i].x * extrinsic_.rotation[0][0] +
                 raw[i].y * extrinsic_.rotation[0][1] +
@@ -382,6 +390,10 @@ void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
       point.z = (raw[i].x * extrinsic_.rotation[2][0] +
                 raw[i].y * extrinsic_.rotation[2][1] +
                 raw[i].z * extrinsic_.rotation[2][2] + extrinsic_.trans[2]) / 1000.0;
+      point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
+      point.phi = asin(point.z/point.r);
+      double r_xy = sqrt(point.y*point.y + point.x*point.x);
+      point.theta = asin(point.y / r_xy);
     }
     point.reflectivity = raw[i].reflectivity;
     point.line = i % pkt.line_num;
@@ -395,12 +407,20 @@ void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
 void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
   LivoxLidarCartesianLowRawPoint* raw = (LivoxLidarCartesianLowRawPoint*)pkt.raw_data.data();
   StoragePoint point = {};
-  std::cout << "We are in ProcessCartesianLowPoint" << std::endl;
+  static bool first = true;
+  if (first){
+    std::cout << "Sensor provides CartesianLowPoint" << std::endl;
+    first = false;
+  }
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 100.0;
       point.y = raw[i].y / 100.0;
       point.z = raw[i].z / 100.0;
+      point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
+      point.phi = asin(point.z/point.r);
+      double r_xy = sqrt(point.y*point.y + point.x*point.x);
+      point.theta = asin(point.y / r_xy);
     } else {
       point.x = (raw[i].x * extrinsic_.rotation[0][0] +
                 raw[i].y * extrinsic_.rotation[0][1] +
@@ -411,6 +431,10 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
       point.z = (raw[i].x * extrinsic_.rotation[2][0] +
                 raw[i].y * extrinsic_.rotation[2][1] +
                 raw[i].z * extrinsic_.rotation[2][2] + extrinsic_.trans[2]) / 100.0;
+      point.r = sqrt(point.z*point.z + point.y*point.y + point.x*point.x);
+      point.phi = asin(point.z/point.r);
+      double r_xy = sqrt(point.y*point.y + point.x*point.x);
+      point.theta = asin(point.y / r_xy);
     }
     point.reflectivity = raw[i].reflectivity;
     point.line = i % pkt.line_num;
@@ -424,7 +448,11 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
 void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
   LivoxLidarSpherPoint* raw = (LivoxLidarSpherPoint*)pkt.raw_data.data();
   StoragePoint point = {};
-  std::cout << "We are in ProcessSphericalPoint" << std::endl;
+  static bool first = true;
+  if (first){
+    std::cout << "Sensor provides SphericalPoint" << std::endl;
+    first = false;
+  }
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     //std::cout << "raw[i].theta in ProcessSphericalPoint is " << raw[i].phi / 100.0 / 180 * PI << std::endl;
     if ((raw[i].depth / 1000.0) > 0.0){
