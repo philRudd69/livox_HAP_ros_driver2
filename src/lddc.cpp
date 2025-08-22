@@ -436,6 +436,7 @@ void Lddc::InitPointCloud2XyzttprrtlMsg(const StoragePacket& pkg, PointCloud2& c
     point.z = pkg.points[i].z;
     point.time_offset = static_cast<uint32_t>(pkg.points[i].absolute_time - pkg.base_time);
     point.theta = pkg.points[i].theta;
+    //std::cout << "Point.theta in InitPointCloud2Xyzttprrtl is " << point.theta << std::endl;
     point.phi = pkg.points[i].phi;
     point.r = pkg.points[i].r;
     point.reflectivity = pkg.points[i].reflectivity;
@@ -660,9 +661,13 @@ void Lddc::PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index
 #ifdef BUILDING_ROS2
 std::shared_ptr<rclcpp::PublisherBase> Lddc::CreatePublisher(uint8_t msg_type,
     std::string &topic_name, uint32_t queue_size) {
-    if (kPointCloud2XyzrtltMsg == msg_type || kPointCloud2XyzttprrtlMsg == msg_type) {
+    if (kPointCloud2XyzrtltMsg == msg_type) {
       DRIVER_INFO(*cur_node_,
-          "%s publish use PointCloud2 format", topic_name.c_str());
+          "%s publish use PointCloud2 (PointXYZTRTL) format", topic_name.c_str());
+      return cur_node_->create_publisher<PointCloud2>(topic_name, queue_size);
+    } else if (kPointCloud2XyzttprrtlMsg == msg_type) {
+      DRIVER_INFO(*cur_node_,
+          "%s publish use PointCloud2 (PointXYZTTPRRTL) format", topic_name.c_str());
       return cur_node_->create_publisher<PointCloud2>(topic_name, queue_size);
     } else if (kLivoxCustomMsg == msg_type) {
       DRIVER_INFO(*cur_node_,

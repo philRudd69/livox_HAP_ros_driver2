@@ -366,6 +366,7 @@ void LidarPubHandler::SetLidarsExtParam(LidarExtParameter lidar_param) {
 void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
   LivoxLidarCartesianHighRawPoint* raw = (LivoxLidarCartesianHighRawPoint*)pkt.raw_data.data();
   StoragePoint point = {};
+  std::cout << "We are in ProcessCartesianHighPoint" << std::endl;
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 1000.0;
@@ -394,6 +395,7 @@ void LidarPubHandler::ProcessCartesianHighPoint(RawPacket & pkt) {
 void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
   LivoxLidarCartesianLowRawPoint* raw = (LivoxLidarCartesianLowRawPoint*)pkt.raw_data.data();
   StoragePoint point = {};
+  std::cout << "We are in ProcessCartesianLowPoint" << std::endl;
   for (uint32_t i = 0; i < pkt.point_num; i++) {
     if (pkt.extrinsic_enable) {
       point.x = raw[i].x / 100.0;
@@ -422,7 +424,9 @@ void LidarPubHandler::ProcessCartesianLowPoint(RawPacket & pkt) {
 void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
   LivoxLidarSpherPoint* raw = (LivoxLidarSpherPoint*)pkt.raw_data.data();
   StoragePoint point = {};
+  std::cout << "We are in ProcessSphericalPoint" << std::endl;
   for (uint32_t i = 0; i < pkt.point_num; i++) {
+    //std::cout << "raw[i].theta in ProcessSphericalPoint is " << raw[i].phi / 100.0 / 180 * PI << std::endl;
     if ((raw[i].depth / 1000.0) > 0.0){
       double radius = raw[i].depth / 1000.0;
       double theta = raw[i].theta / 100.0 / 180 * PI;
@@ -433,8 +437,6 @@ void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
       // Note: The following seems odd: 
       //       Why are we ignoring the extrinsics if extrinsic_enable==true?
       if (pkt.extrinsic_enable) {
-        // Note: This code is never executed because
-        //       extrinsic_enable is always set to false!
         point.x = src_x;
         point.y = src_y;
         point.z = src_z;
@@ -467,8 +469,6 @@ void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
       // Note: The following seems odd: 
       //       Why are we ignoring the extrinsics if extrinsic_enable==true?
       if (pkt.extrinsic_enable) {
-        // Note: This code is never executed because
-        //       extrinsic_enable is always set to false!
         point.x = 0.0;
         point.y = 0.0;
         point.z = 0.0;

@@ -114,10 +114,10 @@ typedef enum {
   kSourceUndef,
 } LidarDataSourceType;
 
-typedef enum { 
-  kCoordinateCartesian = 0, 
-  kCoordinateSpherical // TODO set this to 1?
-} CoordinateType;
+// typedef enum { 
+//   kCoordinateCartesian = 0, 
+//   kCoordinateSpherical // TODO set this to 1?
+// } CoordinateType;
 
 typedef enum {
   kConfigDataType = 1 << 0,
@@ -127,11 +127,11 @@ typedef enum {
   kConfigUnknown
 } LivoxLidarConfigCodeBit;
 
-typedef enum {
-  kNoneExtrinsicParameter,
-  kExtrinsicParameterFromLidar,
-  kExtrinsicParameterFromXml
-} ExtrinsicParameterType;
+// typedef enum {
+//   kNoneExtrinsicParameter,
+//   kExtrinsicParameterFromLidar,
+//   kExtrinsicParameterFromXml
+// } ExtrinsicParameterType;
 
 typedef struct {
  uint8_t lidar_type {};
@@ -192,9 +192,10 @@ typedef struct {
   uint32_t handle;
   uint8_t lidar_type; ////refer to LivoxLidarType
   uint32_t points_num;
-  StoragePoint* points;  // TODO: change to StoragePoint?
+  StoragePoint* points;
 } PointPacket;
 
+/* internal storage of pub_handler for holding the PointPackets of every Lidar */
 typedef struct {
   uint64_t base_time[kMaxSourceLidar] {};  // zero value initialization
   uint8_t lidar_num {};
@@ -208,7 +209,7 @@ typedef struct {
   uint32_t handle;
   uint64_t base_time;
   uint32_t points_num;
-  std::vector<StoragePoint> points;  // TODO: change to StoragePoint?
+  std::vector<StoragePoint> points;
 } StoragePacket;
 
 typedef struct {

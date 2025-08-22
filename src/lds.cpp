@@ -124,7 +124,7 @@ void Lds::StorageImuData(ImuData* imu_data) {
 
 /***
  * This method is not used
- */
+
 void Lds::StorageLvxPointData(PointFrame* frame) {
   if (frame == nullptr) {
     return;
@@ -147,6 +147,7 @@ void Lds::StorageLvxPointData(PointFrame* frame) {
     PushLidarData(&lidar_point, index, base_time);
   }
 }
+ */
 
 void Lds::StoragePointData(PointFrame* frame) {
   if (frame == nullptr) {
