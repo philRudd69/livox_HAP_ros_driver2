@@ -493,6 +493,7 @@ void LidarPubHandler::ProcessSphericalPoint(RawPacket& pkt) {
         point.x = 0.0;
         point.y = 0.0;
         point.z = 0.0;
+      }
     }
     point.reflectivity = raw[i].reflectivity;
     point.line = i % pkt.line_num;

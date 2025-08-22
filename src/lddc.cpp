@@ -172,9 +172,9 @@ void Lddc::PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar) {
       PublishCustomPointcloud(p_queue, index);
     } else if (kPclPxyziMsg == transfer_format_) {
       PublishPclMsg(p_queue, index);
-    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->config.coordinate==1){
+    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->livox_config.pcl_data_type==3){
       PublishPointCloud2Xyzttprrtl(p_queue, index);
-    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->config.coordinate==0){
+    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->livox_config.pcl_data_type<=2){
       RCLCPP_WARN_THROTTLE(cur_node_->get_logger(), *cur_node_->get_clock(), 1000,
                            "xfer_format = Livox Pointcloud(XYZTTPRRTL) (=4) but coordinate = cartesian (=0)." \
                            "This is not possible. Switching to xfer_format = Livox Pointcloud(XYZRTL) (=0)");
@@ -321,7 +321,7 @@ void Lddc::InitPointcloud2XyzrtltMsgHeader(PointCloud2& cloud) {
   cloud.point_step = sizeof(LivoxPointXyzrtlt);
 }
 
-void Lddc::InitPointcloud2MsgHeaderXyzttprrtl(PointCloud2& cloud) {
+void Lddc::InitPointcloud2XyzttprrtlMsgHeader(PointCloud2& cloud) {
   /* the new point type that contains cartesian and spherical coordinates */ 
   cloud.header.frame_id.assign(frame_id_);
   cloud.height = 1;
@@ -408,7 +408,7 @@ void Lddc::InitPointcloud2XyzrtltMsg(const StoragePacket& pkg, PointCloud2& clou
 }
 
 void Lddc::InitPointCloud2XyzttprrtlMsg(const StoragePacket& pkg, PointCloud2& cloud, uint64_t& timestamp) {
-  InitPointCloud2XyzttprrtlMsgHeader(cloud);
+  InitPointcloud2XyzttprrtlMsgHeader(cloud);
 
   cloud.point_step = sizeof(LivoxPointXyzttprrtl);
 

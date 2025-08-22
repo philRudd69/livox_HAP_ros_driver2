@@ -256,32 +256,9 @@ typedef struct {
   ExtParameter param;
 } LidarExtParameter;
 
-/** Configuration in json config file for livox lidar */
-typedef struct {
-  char broadcast_code[16];
-  bool enable_connect;
-  bool enable_fan;
-  uint32_t return_mode;
-  uint32_t coordinate;
-  uint32_t imu_rate;
-  uint32_t extrinsic_parameter_source;
-  bool enable_high_sensitivity;
-} UserRawConfig;
-
-typedef struct {
-  bool enable_fan;
-  uint32_t return_mode;
-  uint32_t coordinate;              /**< 0 for CartesianCoordinate; others for SphericalCoordinate. */
-  uint32_t imu_rate;
-  uint32_t extrinsic_parameter_source;
-  bool enable_high_sensitivity;
-  volatile uint32_t set_bits;
-  volatile uint32_t get_bits;
-} UserConfig;
-
 typedef struct {
   uint32_t handle;
-  int8_t pcl_data_type;
+  int8_t pcl_data_type;             /**< 1 for CartesianCoordinate 32bit; 2 for CartesianCoordinate 16bit; 3 for SphericalCoordinate. */
   int8_t pattern_mode;
   int32_t blind_spot_set;
   int8_t dual_emit_en;
