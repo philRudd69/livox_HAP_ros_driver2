@@ -174,9 +174,9 @@ void Lddc::PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar) {
       PublishPclMsg(p_queue, index);
     } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->livox_config.pcl_data_type==3){
       PublishPointCloud2Xyzttprrtl(p_queue, index);
-    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->livox_config.pcl_data_type<=2){
+    } else if (kPointCloud2XyzttprrtlMsg == transfer_format_ && lidar->livox_config.pcl_data_type!=3){
       RCLCPP_WARN_THROTTLE(cur_node_->get_logger(), *cur_node_->get_clock(), 1000,
-                           "xfer_format = Livox Pointcloud(XYZTTPRRTL) (=4) but coordinate = cartesian (=0)." \
+                           "xfer_format = Livox Pointcloud(XYZTTPRRTL) (=4) but coordinate = cartesian (=[1,2])." \
                            "This is not possible. Switching to xfer_format = Livox Pointcloud(XYZRTL) (=0)");
       PublishPointcloud2Xyzrtlt(p_queue, index);
     }
