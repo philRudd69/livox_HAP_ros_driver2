@@ -102,10 +102,10 @@ void PubHandler::OnLivoxLidarPointCloudCallback(uint32_t handle, const uint8_t d
     return;
   }
 
-  if (data->time_type != kTimestampTypeNoSync) {
-    is_timestamp_sync_.store(true);
+  if (data->time_type == kTimestampTypeNoSync) {
+    is_timestamp_sync_.store(true);  // TODO Trial if this fixes the varying point cloud length
   } else {
-    is_timestamp_sync_.store(false);
+    is_timestamp_sync_.store(true);
   }
 
   if (data->data_type == kLivoxLidarImuData) {
