@@ -28,7 +28,7 @@
       "ip" : "192.168.43.117",
       "pcl_data_type" : 3,
       "pattern_mode" : 0,
-      "blind_spot_set" : -1,
+      "blind_spot_set" : 50,
       "dual_emit_en": 1,
       "extrinsic_parameter" : {
         "roll": 0.0,
